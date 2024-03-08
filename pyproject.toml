@@ -1,0 +1,57 @@
+[project]
+name = "calendar-queue"
+dynamic = ["version"]
+description = "A calendar queue for asyncio based projects"
+authors = [
+    {name = "Claudio Usai"},
+]
+dependencies = []
+requires-python = ">=3.10"
+readme = "README.md"
+license = {text = "MIT"}
+classifiers = [
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: MIT License",
+]
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+[tool.pytest.ini_options]
+addopts = "--cov=calendar_queue --cov-report xml:coverage.xml --cov-report term --timeout=60"
+
+[tool.pylint.format]
+max-line-length = "88"
+
+[tool.pdm]
+distribution = true
+
+[tool.pdm.version]
+source = "file"
+path = "src/calendar_queue/__init__.py"
+
+[tool.pdm.dev-dependencies]
+test = [
+    "pytest~=8.1",
+    "time-machine~=2.14",
+    "pytest-asyncio>=0.23.7",
+    "pytest-cov>=5.0.0",
+    "pytest-timeout>=2.3.1",
+]
+docs = [
+    "mkdocs~=1.5",
+    "mkdocstrings[python]~=0.25",
+]
+formatter = [
+    "black~=24.2",
+]
+typesafety = [
+    "mypy~=1.9",
+]
+linting = [
+    "pylint~=3.1",
+]

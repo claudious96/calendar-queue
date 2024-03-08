@@ -1,0 +1,20 @@
+site_name: calendar-queue
+theme:
+  name: readthedocs
+nav:
+  - Introduction: index.md
+  - Tutorials: 
+    - CalendarQueue: tutorials/calendar-queue.md 
+    - Calendar: tutorials/calendar.md 
+  - API Reference: 
+    - CalendarQueue: api-reference/calendar-queue.md 
+    - Calendar: api-reference/calendar.md 
+
+plugins:
+- search
+- mkdocstrings:
+    handlers:
+      python:
+        options:
+          members_order: source
+          returns_named_value: false
