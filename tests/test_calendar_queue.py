@@ -1,5 +1,6 @@
 import asyncio
 import math
+import sys
 from datetime import datetime, timedelta
 from time import time
 
@@ -13,6 +14,29 @@ from tests import ABS_TOLERANCE
 def test_init():
 
     assert CalendarQueue()
+
+
+@pytest.mark.asyncio
+@pytest.mark.skipif(
+    sys.version_info <= (3, 13),
+    reason="Queue shutdown is supported only from python 3.13 on",
+)
+async def test_queue_shutdown():
+    """Test for python >= 3.13 only. Check that QueueShutDown
+    is correctly raised when putting or getting after shutting down the queue
+    """
+
+    from asyncio import QueueShutDown
+
+    cq = CalendarQueue()
+
+    cq.shutdown()
+
+    with pytest.raises(QueueShutDown):
+        await cq.get()
+
+    with pytest.raises(QueueShutDown):
+        await cq.put((time() + 10, "foo"))
 
 
 @pytest.mark.asyncio
