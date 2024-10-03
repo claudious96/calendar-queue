@@ -15,6 +15,7 @@ async def test_init():
 
     c: Calendar[MyItem] = Calendar()
 
+
 @pytest.mark.asyncio
 async def test_schedule():
 
@@ -24,13 +25,17 @@ async def test_schedule():
 
     c.schedule("foo", ts)
 
-    assert c.next_scheduled() == "foo" and math.isclose(c.time_remaining(), ts.timestamp() - time(), abs_tol=ABS_TOLERANCE)
+    assert c.next_scheduled() == "foo" and math.isclose(
+        c.time_remaining(), ts.timestamp() - time(), abs_tol=ABS_TOLERANCE
+    )
 
     c.clear()
 
     c.schedule("bar", ts.timestamp())
 
-    assert c.next_scheduled() == "bar" and math.isclose(c.time_remaining(), ts.timestamp() - time(), abs_tol=ABS_TOLERANCE)
+    assert c.next_scheduled() == "bar" and math.isclose(
+        c.time_remaining(), ts.timestamp() - time(), abs_tol=ABS_TOLERANCE
+    )
 
 
 @pytest.mark.asyncio
@@ -45,7 +50,7 @@ async def test_events_generator():
 
     count = 0
     async for ts, event in c.events():
-        assert (time() >= ts or math.isclose(time(), ts)) 
+        assert time() >= ts or math.isclose(time(), ts)
         assert event == count
         count += 1
 
@@ -68,7 +73,7 @@ async def test_run_async_executor():
     async def async_executor(ts, item, calendar):
         nonlocal count
 
-        assert (time() >= ts or math.isclose(time(), ts)) 
+        assert time() >= ts or math.isclose(time(), ts)
         assert item == count
         assert calendar == c
 
@@ -79,7 +84,7 @@ async def test_run_async_executor():
 
     with pytest.raises(CalendarMissingExecutor):
         await c.run()
-    
+
     c.set_executor(executor=async_executor)
 
     await c.run()
@@ -106,7 +111,7 @@ async def test_run_executor():
         nonlocal count
         nonlocal test_done
 
-        assert (time() >= ts or math.isclose(time(), ts)) 
+        assert time() >= ts or math.isclose(time(), ts)
         assert item == count
         assert calendar == c
 
@@ -115,13 +120,12 @@ async def test_run_executor():
         if count >= 5:
             if not test_done:
                 test_done = True
-            
+
             c.stop()
 
-    
     with pytest.raises(CalendarMissingExecutor):
         await c.run()
-    
+
     c.set_executor(executor=executor)
 
     await c.run()
@@ -132,7 +136,7 @@ async def test_run_executor():
 
     assert count == 6
 
-    
+
 @pytest.mark.asyncio
 async def test_cancel_events():
 
@@ -142,23 +146,23 @@ async def test_cancel_events():
 
     for i in range(5):
         c.schedule(i, ts + timedelta(seconds=i * 1))
-    
+
     len(c.remaining_events()) == 5
 
     pick_events = lambda x: x[1] % 2
 
     cancelled_events = c.cancel_event(pick_events)
 
-    assert (len(cancelled_events) == 2 and 
-            all(pick_events(x) for x in cancelled_events))
-    
+    assert len(cancelled_events) == 2 and all(pick_events(x) for x in cancelled_events)
+
     remaining_events = c.remaining_events()
 
-    assert (len(remaining_events) == 3 and
-            all(not pick_events(x) for x in remaining_events))
+    assert len(remaining_events) == 3 and all(
+        not pick_events(x) for x in remaining_events
+    )
 
     async for ts, event in c.events():
-        assert (time() >= ts or math.isclose(time(), ts)) 
+        assert time() >= ts or math.isclose(time(), ts)
         assert not event % 2
 
         if len(c.remaining_events()) == 0:
