@@ -14,8 +14,13 @@ def test_init():
 
     assert CalendarQueue()
 
+
 @pytest.mark.asyncio
 async def test_simple_put():
+    """Test put by putting one element and checking that
+    the it is present in the queue and verifying that the
+    timer is correctly set for the given timestamp
+    """
 
     cq = CalendarQueue()
 
@@ -31,7 +36,10 @@ async def test_simple_put():
 
     assert cq.peek() == foo[-1]
 
-    assert math.isclose(cq._getter_timer.when(), base_loop_ts + 10, abs_tol=ABS_TOLERANCE)
+    # check timer is correct (we can't match the exact timestamp)
+    assert math.isclose(
+        cq._getter_timer.when(), base_loop_ts + 10, abs_tol=ABS_TOLERANCE
+    )
 
     ts_2 = base_ts + 5
 
@@ -41,10 +49,17 @@ async def test_simple_put():
 
     assert cq.peek() == bar[-1]
 
-    assert math.isclose(cq._getter_timer.when(), base_loop_ts + 5, abs_tol=ABS_TOLERANCE)
+    # check timer is correct (we can't match the exact timestamp)
+    assert math.isclose(
+        cq._getter_timer.when(), base_loop_ts + 5, abs_tol=ABS_TOLERANCE
+    )
+
 
 @pytest.mark.asyncio
 async def test_get():
+    """Test getting an element by putting one, getting it and
+    checking that the time at which it is returned is correct.
+    """
 
     cq = CalendarQueue()
 
@@ -52,16 +67,23 @@ async def test_get():
 
     await cq.put(item=foo)
 
-    assert (await cq.get()) == foo and (time() >= foo[0] or math.isclose(time(), foo[0]))
+    # check timer is correct (we can't match the exact timestamp)
+    assert (await cq.get()) == foo and (
+        time() >= foo[0] or math.isclose(time(), foo[0])
+    )
 
 
 @pytest.mark.asyncio
 async def test_delete_items():
+    """Test the routing for deleting the items by inserting
+    a set of numbers, purging only the odd entries
+    and then checking the number of remaining elements.
+    """
 
     cq = CalendarQueue()
 
     for i in range(10):
-        cq.put_nowait((time() + 60, f'{i}'))
+        cq.put_nowait((time() + 60, f"{i}"))
 
     cq.delete_items(lambda x: bool(int(x[-1]) % 2))
 
@@ -70,6 +92,11 @@ async def test_delete_items():
 
 @pytest.mark.asyncio
 async def test_far_schedule():
+    """Test putting an event scheduled far in time.
+    We use time-machine to simulate the time traveling
+    and verify that the elements are returned at the correct
+    timestamp.
+    """
 
     cq = CalendarQueue()
 
@@ -81,7 +108,6 @@ async def test_far_schedule():
         await asyncio.wait_for(cq.get(), 2)
         pytest.fail("Item was returned immediately. It makes no sense.")
 
-    
     with time_machine.travel((datetime.now() + delta + timedelta(seconds=10))):
         item = await asyncio.wait_for(cq.get(), 5)
         assert item[-1] == "foo"
@@ -89,6 +115,15 @@ async def test_far_schedule():
 
 @pytest.mark.asyncio
 async def test_far_schedule_alt():
+    """Another far schedule test still using time-machine.
+    This time two tasks are defined, both depends on time-machine's
+    timestamp
+    - task 1 puts an item, verifies that is's not immediately returned,
+        sets an asyncio.Event and awaits for the event to be returned
+    - task 2 awaits for the Event to be set by task 1 and then shifts
+        the time so that the test doesn't have to wait for 1 month to
+        be done.
+    """
 
     cq = CalendarQueue()
 
@@ -110,7 +145,7 @@ async def test_far_schedule_alt():
 
             item = await cq.get()
 
-            assert item[-1] == 'foo'
+            assert item[-1] == "foo"
 
             test_done_event.set()
 
@@ -123,8 +158,8 @@ async def test_far_schedule_alt():
             await asyncio.wait_for(test_done_event.wait(), 2)
 
         tasks = [
-            asyncio.create_task(put_item(), name='put'),
-            asyncio.create_task(shift_time(), name='shift')
+            asyncio.create_task(put_item(), name="put"),
+            asyncio.create_task(shift_time(), name="shift"),
         ]
 
         await asyncio.wait(tasks, return_when=asyncio.ALL_COMPLETED)
@@ -139,6 +174,11 @@ async def test_far_schedule_alt():
 
 @pytest.mark.asyncio
 async def test_put():
+    """Another test for put, this time we put events scheduled
+    for several timestamp, willingly in an unordered fashion
+    and each time verify that the timer for returning the next
+    event is correctly updated.
+    """
 
     cq_nosize = CalendarQueue()
 
@@ -147,21 +187,32 @@ async def test_put():
 
     await cq_nosize.put((base_ts + 180, "foo"))
 
-    assert math.isclose(cq_nosize._getter_timer.when(), base_loop_ts + 180, abs_tol=ABS_TOLERANCE)
+    # check timer is correct (we can't match the exact timestamp)
+    assert math.isclose(
+        cq_nosize._getter_timer.when(), base_loop_ts + 180, abs_tol=ABS_TOLERANCE
+    )
 
     await cq_nosize.put((base_ts + 300, "bar"))
 
-    assert math.isclose(cq_nosize._getter_timer.when(), base_loop_ts + 180, abs_tol=ABS_TOLERANCE)
+    # check timer is correct (we can't match the exact timestamp)
+    assert math.isclose(
+        cq_nosize._getter_timer.when(), base_loop_ts + 180, abs_tol=ABS_TOLERANCE
+    )
 
     await cq_nosize.put((base_ts + 90, "baz"))
 
-    assert math.isclose(cq_nosize._getter_timer.when(), base_loop_ts + 90, abs_tol=ABS_TOLERANCE)
+    # check timer is correct (we can't match the exact timestamp)
+    assert math.isclose(
+        cq_nosize._getter_timer.when(), base_loop_ts + 90, abs_tol=ABS_TOLERANCE
+    )
 
     assert cq_nosize.qsize() == 3
 
 
 @pytest.mark.asyncio
 async def test_put_limited_q():
+    """Test putting elements in a CalendarQueue with maxsize set."""
+
     cq = CalendarQueue(1)
 
     base_ts = time()
@@ -182,23 +233,31 @@ async def test_put_limited_q():
     async def put_item():
 
         assert cq.full()
-        
+
         with pytest.raises((TimeoutError, asyncio.TimeoutError)):
             await asyncio.wait_for(cq.put((second_ts, "bar")), first_ts - time() - 0.1)
             pytest.fail("Returned immediately while queue was full")
-            
+
         await asyncio.wait_for(cq.put((second_ts, "bar")), first_ts - time() + 0.5)
 
     async def get_queue():
 
         ts, item = await asyncio.wait_for(cq.get(), first_ts - time() + 0.5)
-        assert ts == first_ts and (time() >= ts or math.isclose(time(), ts)) and item == "foo" 
+        assert (
+            ts == first_ts
+            and (time() >= ts or math.isclose(time(), ts))
+            and item == "foo"
+        )
         ts, item = await asyncio.wait_for(cq.get(), second_ts - time() + 0.5)
-        assert ts == second_ts and (time() >= ts or math.isclose(time(), ts))  and item == "bar" 
+        assert (
+            ts == second_ts
+            and (time() >= ts or math.isclose(time(), ts))
+            and item == "bar"
+        )
 
     tasks = [
-        asyncio.create_task(put_item(), name='put'),
-        asyncio.create_task(get_queue(), name='get')
+        asyncio.create_task(put_item(), name="put"),
+        asyncio.create_task(get_queue(), name="get"),
     ]
 
     done, pending = await asyncio.wait(tasks, return_when=asyncio.ALL_COMPLETED)
@@ -211,6 +270,9 @@ async def test_put_limited_q():
 
 @pytest.mark.asyncio
 async def test_next_in():
+    """Test for ensuring that next_in returns the time left
+    until the next scheduled event is correct.
+    """
 
     cq = CalendarQueue()
 
@@ -225,7 +287,9 @@ async def test_next_in():
     cq.put_nowait((scheduled_ts, "foo"))
 
     assert cq.next_in() and int(cq.next_in()) == int(scheduled_ts - time())
-    assert math.isclose(cq._getter_timer.when(), base_loop_ts + delta_1, abs_tol=ABS_TOLERANCE)
+    assert math.isclose(
+        cq._getter_timer.when(), base_loop_ts + delta_1, abs_tol=ABS_TOLERANCE
+    )
 
     cq.put_nowait((time() + delta_2, "bar"))
 
@@ -233,9 +297,12 @@ async def test_next_in():
 
     assert cq.next_in() == 0
 
+
 @pytest.mark.asyncio
 async def test_peek():
-
+    """Test to make sure that peek returns correctly the
+    next event in the queue.
+    """
 
     cq = CalendarQueue()
 
@@ -248,15 +315,18 @@ async def test_peek():
     cq.put_nowait((ts_1, "foo"))
     cq.put_nowait((ts_2, "bar"))
 
-    assert cq.peek() ==  "foo"
+    assert cq.peek() == "foo"
 
     cq.put_nowait((ts_3, "baz"))
 
-    assert cq.peek() ==  "baz"
+    assert cq.peek() == "baz"
+
 
 @pytest.mark.asyncio
 async def test_delete():
-
+    """Test that every time an event is deleted, the timer for
+    getting the next event in the queue is correctly updated.
+    """
 
     cq = CalendarQueue()
 
@@ -267,12 +337,19 @@ async def test_delete():
     cq.put_nowait((base_ts + 60, "foo"))
     cq.put_nowait((base_ts + 180, "baz"))
 
-    assert math.isclose(cq._getter_timer.when(), base_loop_ts + 60, abs_tol=ABS_TOLERANCE)
+    assert math.isclose(
+        cq._getter_timer.when(), base_loop_ts + 60, abs_tol=ABS_TOLERANCE
+    )
 
     del_items = cq.delete_items(lambda x: x[1] == "foo")
 
-    assert len(del_items) == 1 and del_items[0] == (base_ts + 60, "foo") and \
-        math.isclose(cq._getter_timer.when(), base_loop_ts + 120, abs_tol=ABS_TOLERANCE)
+    assert (
+        len(del_items) == 1
+        and del_items[0] == (base_ts + 60, "foo")
+        and math.isclose(
+            cq._getter_timer.when(), base_loop_ts + 120, abs_tol=ABS_TOLERANCE
+        )
+    )
 
     assert cq.qsize() == 2
 
