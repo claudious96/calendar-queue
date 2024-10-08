@@ -13,7 +13,7 @@ else
     echo "Found $PDM_VERSION"
 fi
 
-SUPPORTED_PYTHON_VERSIONS=("3.10" "3.11" "3.12")
+SUPPORTED_PYTHON_VERSIONS=("3.10" "3.11" "3.12" "3.13")
 
 ERROR=0
 

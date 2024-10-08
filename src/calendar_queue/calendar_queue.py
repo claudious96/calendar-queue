@@ -9,8 +9,15 @@ from asyncio import Queue, QueueFull, TimerHandle
 from heapq import heappop as heap_pop
 from heapq import heappush as heap_push
 import math
+import sys
 from time import time
 from typing import Callable, Generic, Optional, TypeVar, Union
+
+if sys.version_info >= (3, 13):
+    from asyncio import QueueShutDown
+else:
+    QueueShutDown = ValueError
+
 
 CalendarEvent = TypeVar("CalendarEvent")
 
@@ -77,9 +84,14 @@ class CalendarQueue(Queue, Generic[CalendarEvent]):
 
         If queue is empty, wait until an item is available.
 
+        Raises:
+            QueueShutDown: (Only in python >= 3.13) if the queue has been
+                shut down and is empty, or if the queue has been shut down
+                immediately.
+
         Returns:
             (Tuple[float, CalendarEvent]): Tuple containing the scheduled
-                timestamp and the even
+                timestamp and the event.
         """
 
         # we should await if the queue is empty or if the timer
@@ -88,6 +100,9 @@ class CalendarQueue(Queue, Generic[CalendarEvent]):
             self._getter_timer is not None
             and self._getter_timer.when() > self._get_loop().time()
         ):
+
+            if getattr(self, "_is_shutdown", False) and self.empty():
+                raise QueueShutDown
 
             getter = self._get_loop().create_future()
             self._getters.append(getter)
@@ -121,9 +136,15 @@ class CalendarQueue(Queue, Generic[CalendarEvent]):
         slot is available before adding item.
 
         Args:
-            item (tuple[Union[float, int], CalendarEvent]): Item to put in the queue
+            item (tuple[Union[float, int], CalendarEvent]): Item to put in the queue.
+        
+        Raises:
+            QueueShutDown: (Only in python >= 3.13) if the queue has been
+                shut down.
         """
         while self.full():
+            if getattr(self, "_is_shutdown", False):
+                raise QueueShutDown
             putter = self._get_loop().create_future()
             self._putters.append(putter)
             try:
@@ -153,8 +174,11 @@ class CalendarQueue(Queue, Generic[CalendarEvent]):
             item (tuple[Union[float, int], CalendarEvent]): Item to put in the queue
 
         Raises:
-            QueueFull: when queue is full
+            QueueFull: when queue is full.
+            QueueShutDown: (Only in python >= 3.13) if the queue has been shut down.
         """
+        if getattr(self, "_is_shutdown", False):
+            raise QueueShutDown
         if self.full():
             raise QueueFull
         self._put(item)
