@@ -1,7 +1,7 @@
 [project]
 name = "calendar-queue"
 dynamic = ["version"]
-description = "A calendar queue for asyncio based projects"
+description = "A pure python calendar-queue based on asyncio"
 authors = [
     {name = "Claudio Usai"},
 ]
