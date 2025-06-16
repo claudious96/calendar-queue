@@ -37,7 +37,7 @@ jobs:
         python-version: ${{ matrix.python-version }}
         # The target architecture (x86, x64) of the Python interpreter.
         # architecture: # optional
-        version: 2.19.1
+        version: 2.25.2
         cache: true
         cache-dependency-path: ./py${{ matrix.python-version }}.lock
 
