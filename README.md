@@ -13,7 +13,7 @@ Many other libraries allow for event/job scheduling but either they are not asyn
 1. providing the primitives for creating your own scheduler by exporting a `CalendarQueue` class in which events can be awaited
 2. providing a higher level abstraction `Calendar` class that simplifies the usage of `CalendarQueue`.
 
-Depending on your needs, you can use one of the two to develop your own event manager/scheduler. 
+Depending on your needs, you can use one of the two to develop your own event manager/scheduler.
 
 The idea is: we take care of emitting events at the right time, you write the logic for acting accordingly.
 
@@ -35,7 +35,7 @@ from secrets import token_hex
 
 from calendar_queue import CalendarQueue
 
-# (optional) define the item type 
+# (optional) define the item type
 CustomItem = tuple[str]
 
 # use the low level calendar queue
@@ -77,7 +77,7 @@ async def main():
 
 
 if __name__ == "__main__":
-    asyncio.run(main())    
+    asyncio.run(main())
 
 ```
 
@@ -85,7 +85,7 @@ if __name__ == "__main__":
 
 This library is developed using Python 3.11 and [`pdm`](https://pdm-project.org/en/latest/) as dependency manager.
 
-Testing is done via github actions and it's done on python versions `3.10`, `3.11`, `3.12` and on latest `ubuntu`, `macos`, `windows` OSes.
+Testing is done via github actions and it's done on python versions `3.10`, `3.11`, `3.12`, `3.13`, `3.14`, `3.14t` and on latest `ubuntu`, `macos`, `windows` OSes.
 
 For local development you'll need to have pdm installed, then you can:
 
