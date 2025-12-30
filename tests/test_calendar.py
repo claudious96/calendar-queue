@@ -1,4 +1,3 @@
-import math
 from datetime import datetime, timedelta
 from time import time
 
@@ -30,18 +29,14 @@ async def test_schedule():
     c.schedule("foo", ts)
 
     # check that the next in line is the correct one and that the time remaining is approximately the same (can't check exact)
-    assert c.next_scheduled() == "foo" and math.isclose(
-        c.time_remaining(), ts.timestamp() - time(), abs_tol=ABS_TOLERANCE
-    )
+    assert c.next_scheduled() == "foo" and c.time_remaining() == pytest.approx(ts.timestamp() - time(), abs=ABS_TOLERANCE)
 
     c.clear()
 
     c.schedule("bar", ts.timestamp())
 
     # check that the next in line is the correct one and that the time remaining is approximately the same (can't check exact)
-    assert c.next_scheduled() == "bar" and math.isclose(
-        c.time_remaining(), ts.timestamp() - time(), abs_tol=ABS_TOLERANCE
-    )
+    assert c.next_scheduled() == "bar" and c.time_remaining() == pytest.approx(ts.timestamp() - time(), abs=ABS_TOLERANCE)
 
 
 @pytest.mark.asyncio
@@ -61,7 +56,7 @@ async def test_events_generator():
     count = 0
     async for ts, event in c.events():
         # ensure events are yielded at the right time
-        assert time() >= ts or math.isclose(time(), ts)
+        assert time() >= ts or time() == pytest.approx(ts)
         assert event == count
         count += 1
 
@@ -98,7 +93,7 @@ async def test_run_async_executor():
     async def async_executor(ts, item, calendar):
         nonlocal count
 
-        assert time() >= ts or math.isclose(time(), ts)
+        assert time() >= ts or time() == pytest.approx(ts)
         assert item == count
         assert calendar == c
 
@@ -137,7 +132,7 @@ async def test_run_executor():
         nonlocal count
         nonlocal test_done
 
-        assert time() >= ts or math.isclose(time(), ts)
+        assert time() >= ts or time() == pytest.approx(ts)
         assert item == count
         assert calendar == c
 
@@ -190,7 +185,7 @@ async def test_cancel_events():
     )
 
     async for ts, event in c.events():
-        assert time() >= ts or math.isclose(time(), ts)
+        assert time() >= ts or time() == pytest.approx(ts)
         assert not event % 2
 
         if len(c.remaining_events()) == 0:
