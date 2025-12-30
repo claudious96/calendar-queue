@@ -1,11 +1,10 @@
 import asyncio
-import math
 import sys
-from datetime import datetime, timedelta
+from datetime import timedelta
 from time import time
+from unittest.mock import patch
 
 import pytest
-import time_machine
 
 from calendar_queue import CalendarQueue
 from tests import ABS_TOLERANCE
@@ -18,7 +17,7 @@ def test_init():
 
 @pytest.mark.asyncio
 @pytest.mark.skipif(
-    sys.version_info <= (3, 13),
+    sys.version_info < (3, 13),
     reason="Queue shutdown is supported only from python 3.13 on",
 )
 async def test_queue_shutdown():
@@ -26,11 +25,11 @@ async def test_queue_shutdown():
     is correctly raised when putting or getting after shutting down the queue
     """
 
-    from asyncio import QueueShutDown
+    from asyncio import QueueShutDown # type: ignore
 
     cq = CalendarQueue()
 
-    cq.shutdown()
+    cq.shutdown() # type: ignore
 
     with pytest.raises(QueueShutDown):
         await cq.get()
@@ -50,7 +49,7 @@ async def test_simple_put():
 
     base_ts = time()
 
-    base_loop_ts = cq._get_loop().time()
+    base_loop_ts = cq._get_loop().time() # type: ignore
 
     ts_1 = base_ts + 10
 
@@ -60,10 +59,10 @@ async def test_simple_put():
 
     assert cq.peek() == foo[-1]
 
+    assert cq._getter_timer is not None
+
     # check timer is correct (we can't match the exact timestamp)
-    assert math.isclose(
-        cq._getter_timer.when(), base_loop_ts + 10, abs_tol=ABS_TOLERANCE
-    )
+    assert cq._getter_timer.when() == pytest.approx(base_loop_ts + 10, abs=ABS_TOLERANCE)
 
     ts_2 = base_ts + 5
 
@@ -74,9 +73,7 @@ async def test_simple_put():
     assert cq.peek() == bar[-1]
 
     # check timer is correct (we can't match the exact timestamp)
-    assert math.isclose(
-        cq._getter_timer.when(), base_loop_ts + 5, abs_tol=ABS_TOLERANCE
-    )
+    assert cq._getter_timer.when() == pytest.approx(base_loop_ts + 5, abs=ABS_TOLERANCE)
 
 
 @pytest.mark.asyncio
@@ -93,7 +90,7 @@ async def test_get():
 
     # check timer is correct (we can't match the exact timestamp)
     assert (await cq.get()) == foo and (
-        time() >= foo[0] or math.isclose(time(), foo[0])
+        time() >= foo[0] or time() == pytest.approx(foo[0])
     )
 
 
@@ -117,12 +114,14 @@ async def test_delete_items():
 @pytest.mark.asyncio
 async def test_far_schedule():
     """Test putting an event scheduled far in time.
-    We use time-machine to simulate the time traveling
+    We use LoopTimeTravel to simulate the time traveling
     and verify that the elements are returned at the correct
     timestamp.
     """
 
     cq = CalendarQueue()
+
+    cq_loop = cq._get_loop() # type: ignore
 
     delta = timedelta(days=30)
 
@@ -132,68 +131,9 @@ async def test_far_schedule():
         await asyncio.wait_for(cq.get(), 2)
         pytest.fail("Item was returned immediately. It makes no sense.")
 
-    with time_machine.travel((datetime.now() + delta + timedelta(seconds=10))):
+    with patch.object(cq_loop, "time", return_value=cq_loop.time() + delta.total_seconds() + 10):
         item = await asyncio.wait_for(cq.get(), 5)
         assert item[-1] == "foo"
-
-
-@pytest.mark.asyncio
-async def test_far_schedule_alt():
-    """Another far schedule test still using time-machine.
-    This time two tasks are defined, both depends on time-machine's
-    timestamp
-    - task 1 puts an item, verifies that is's not immediately returned,
-        sets an asyncio.Event and awaits for the event to be returned
-    - task 2 awaits for the Event to be set by task 1 and then shifts
-        the time so that the test doesn't have to wait for 1 month to
-        be done.
-    """
-
-    cq = CalendarQueue()
-
-    delta = timedelta(days=30)
-
-    time_shift_event = asyncio.Event()
-    test_done_event = asyncio.Event()
-
-    with time_machine.travel(0) as traveler:
-
-        async def put_item():
-            cq.put_nowait((time() + delta.total_seconds(), "foo"))
-
-            with pytest.raises((TimeoutError, asyncio.TimeoutError)):
-                await asyncio.wait_for(cq.get(), 1)
-                pytest.fail("Item was returned immediately. It makes no sense.")
-
-            time_shift_event.set()
-
-            item = await cq.get()
-
-            assert item[-1] == "foo"
-
-            test_done_event.set()
-
-        async def shift_time():
-
-            await time_shift_event.wait()
-
-            traveler.shift(delta.total_seconds() + 10)
-
-            await asyncio.wait_for(test_done_event.wait(), 2)
-
-        tasks = [
-            asyncio.create_task(put_item(), name="put"),
-            asyncio.create_task(shift_time(), name="shift"),
-        ]
-
-        await asyncio.wait(tasks, return_when=asyncio.ALL_COMPLETED)
-
-        done, pending = await asyncio.wait(tasks, return_when=asyncio.ALL_COMPLETED)
-
-        for d in done:
-            assert d.exception() is None
-
-        assert not pending
 
 
 @pytest.mark.asyncio
@@ -207,28 +147,24 @@ async def test_put():
     cq_nosize = CalendarQueue()
 
     base_ts = time()
-    base_loop_ts = cq_nosize._get_loop().time()
+    base_loop_ts = cq_nosize._get_loop().time() # type: ignore
 
     await cq_nosize.put((base_ts + 180, "foo"))
 
+    assert cq_nosize._getter_timer is not None
+
     # check timer is correct (we can't match the exact timestamp)
-    assert math.isclose(
-        cq_nosize._getter_timer.when(), base_loop_ts + 180, abs_tol=ABS_TOLERANCE
-    )
+    assert cq_nosize._getter_timer.when() == pytest.approx(base_loop_ts + 180, abs=ABS_TOLERANCE)
 
     await cq_nosize.put((base_ts + 300, "bar"))
 
     # check timer is correct (we can't match the exact timestamp)
-    assert math.isclose(
-        cq_nosize._getter_timer.when(), base_loop_ts + 180, abs_tol=ABS_TOLERANCE
-    )
+    assert cq_nosize._getter_timer.when() == pytest.approx(base_loop_ts + 180, abs=ABS_TOLERANCE)
 
     await cq_nosize.put((base_ts + 90, "baz"))
 
     # check timer is correct (we can't match the exact timestamp)
-    assert math.isclose(
-        cq_nosize._getter_timer.when(), base_loop_ts + 90, abs_tol=ABS_TOLERANCE
-    )
+    assert cq_nosize._getter_timer.when() == pytest.approx(base_loop_ts + 90, abs=ABS_TOLERANCE)
 
     assert cq_nosize.qsize() == 3
 
@@ -269,13 +205,13 @@ async def test_put_limited_q():
         ts, item = await asyncio.wait_for(cq.get(), first_ts - time() + 0.5)
         assert (
             ts == first_ts
-            and (time() >= ts or math.isclose(time(), ts))
+            and (time() >= ts or time() == pytest.approx(ts))
             and item == "foo"
         )
         ts, item = await asyncio.wait_for(cq.get(), second_ts - time() + 0.5)
         assert (
             ts == second_ts
-            and (time() >= ts or math.isclose(time(), ts))
+            and (time() >= ts or time() == pytest.approx(ts))
             and item == "bar"
         )
 
@@ -306,14 +242,15 @@ async def test_next_in():
     delta_2 = 2
 
     scheduled_ts = time() + delta_1
-    base_loop_ts = cq._get_loop().time()
+    base_loop_ts = cq._get_loop().time() # type: ignore
 
     cq.put_nowait((scheduled_ts, "foo"))
 
-    assert cq.next_in() and int(cq.next_in()) == int(scheduled_ts - time())
-    assert math.isclose(
-        cq._getter_timer.when(), base_loop_ts + delta_1, abs_tol=ABS_TOLERANCE
-    )
+    assert cq.next_in() is not None and int(cq.next_in() or 0) == int(scheduled_ts - time())
+
+    assert cq._getter_timer is not None
+
+    assert cq._getter_timer.when() == pytest.approx(base_loop_ts + delta_1, abs=ABS_TOLERANCE)
 
     cq.put_nowait((time() + delta_2, "bar"))
 
@@ -355,24 +292,22 @@ async def test_delete():
     cq = CalendarQueue()
 
     base_ts = time()
-    base_loop_ts = cq._get_loop().time()
+    base_loop_ts = cq._get_loop().time() # type: ignore
 
     cq.put_nowait((base_ts + 120, "bar"))
     cq.put_nowait((base_ts + 60, "foo"))
     cq.put_nowait((base_ts + 180, "baz"))
 
-    assert math.isclose(
-        cq._getter_timer.when(), base_loop_ts + 60, abs_tol=ABS_TOLERANCE
-    )
+    assert cq._getter_timer is not None
+
+    assert cq._getter_timer.when() == pytest.approx(base_loop_ts + 60, abs=ABS_TOLERANCE)
 
     del_items = cq.delete_items(lambda x: x[1] == "foo")
 
     assert (
         len(del_items) == 1
         and del_items[0] == (base_ts + 60, "foo")
-        and math.isclose(
-            cq._getter_timer.when(), base_loop_ts + 120, abs_tol=ABS_TOLERANCE
-        )
+        and cq._getter_timer.when() == pytest.approx(base_loop_ts + 120, abs=ABS_TOLERANCE)
     )
 
     assert cq.qsize() == 2

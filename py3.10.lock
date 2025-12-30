@@ -5,7 +5,7 @@
 groups = ["default", "docs", "formatter", "linting", "test", "typesafety"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:411050a706445d379d242eae3ef789cb2d5f7c1da8fb18ec9e7eb262794d81ff"
+content_hash = "sha256:d99c01bc2fd0d63feb6bc0801a2498e1c96202731bc102135e050c4c88be9896"
 
 [[metadata.targets]]
 requires_python = "==3.10.*"
@@ -579,23 +579,23 @@ files = [
 
 [[package]]
 name = "pytest"
-version = "8.4.2"
-requires_python = ">=3.9"
+version = "9.0.2"
+requires_python = ">=3.10"
 summary = "pytest: simple powerful testing with Python"
 groups = ["test"]
 marker = "python_version == \"3.10\""
 dependencies = [
     "colorama>=0.4; sys_platform == \"win32\"",
     "exceptiongroup>=1; python_version < \"3.11\"",
-    "iniconfig>=1",
-    "packaging>=20",
+    "iniconfig>=1.0.1",
+    "packaging>=22",
     "pluggy<2,>=1.5",
     "pygments>=2.7.2",
     "tomli>=1; python_version < \"3.11\"",
 ]
 files = [
-    {file = "pytest-8.4.2-py3-none-any.whl", hash = "sha256:872f880de3fc3a5bdc88a11b39c9710c3497a547cfa9320bc3c5e62fbf272e79"},
-    {file = "pytest-8.4.2.tar.gz", hash = "sha256:86c0d0b93306b961d58d62a4db4879f27fe25513d4b969df351abdddb3c30e01"},
+    {file = "pytest-9.0.2-py3-none-any.whl", hash = "sha256:711ffd45bf766d5264d487b917733b453d917afd2b0ad65223959f59089f875b"},
+    {file = "pytest-9.0.2.tar.gz", hash = "sha256:75186651a92bd89611d1d9fc20f0b4345fd827c41ccd5c299a868a05d70edf11"},
 ]
 
 [[package]]
@@ -652,7 +652,7 @@ name = "python-dateutil"
 version = "2.9.0.post0"
 requires_python = "!=3.0.*,!=3.1.*,!=3.2.*,>=2.7"
 summary = "Extensions to the standard Python datetime module"
-groups = ["docs", "test"]
+groups = ["docs"]
 marker = "python_version == \"3.10\""
 dependencies = [
     "six>=1.5",
@@ -714,36 +714,11 @@ name = "six"
 version = "1.17.0"
 requires_python = "!=3.0.*,!=3.1.*,!=3.2.*,>=2.7"
 summary = "Python 2 and 3 compatibility utilities"
-groups = ["docs", "test"]
+groups = ["docs"]
 marker = "python_version == \"3.10\""
 files = [
     {file = "six-1.17.0-py2.py3-none-any.whl", hash = "sha256:4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274"},
     {file = "six-1.17.0.tar.gz", hash = "sha256:ff70335d468e7eb6ec65b95b99d3a2836546063f63acc5171de367e834932a81"},
-]
-
-[[package]]
-name = "time-machine"
-version = "2.19.0"
-requires_python = ">=3.9"
-summary = "Travel through time in your tests."
-groups = ["test"]
-marker = "python_version == \"3.10\""
-dependencies = [
-    "python-dateutil",
-]
-files = [
-    {file = "time_machine-2.19.0-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:b5169018ef47206997b46086ce01881cd3a4666fd2998c9d76a87858ca3e49e9"},
-    {file = "time_machine-2.19.0-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:85bb7ed440fccf6f6d0c8f7d68d849e7c3d1f771d5e0b2cdf871fa6561da569f"},
-    {file = "time_machine-2.19.0-cp310-cp310-manylinux1_i686.manylinux_2_28_i686.manylinux_2_5_i686.whl", hash = "sha256:a3b12028af1cdc09ccd595be2168b7b26f206c1e190090b048598fbe278beb8e"},
-    {file = "time_machine-2.19.0-cp310-cp310-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl", hash = "sha256:c261f073086cf081d1443cbf7684148c662659d3d139d06b772bfe3fe7cc71a6"},
-    {file = "time_machine-2.19.0-cp310-cp310-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:011954d951230a9f1079f22b39ed1a3a9abb50ee297dfb8c557c46351659d94d"},
-    {file = "time_machine-2.19.0-cp310-cp310-musllinux_1_2_aarch64.whl", hash = "sha256:b0f83308b29c7872006803f2e77318874eb84d0654f2afe0e48e3822e7a2e39b"},
-    {file = "time_machine-2.19.0-cp310-cp310-musllinux_1_2_i686.whl", hash = "sha256:39733ef844e2984620ec9382a42d00cccc4757d75a5dd572be8c2572e86e50b9"},
-    {file = "time_machine-2.19.0-cp310-cp310-musllinux_1_2_x86_64.whl", hash = "sha256:f8db99f6334432e9ffbf00c215caf2ae9773f17cec08304d77e9e90febc3507b"},
-    {file = "time_machine-2.19.0-cp310-cp310-win32.whl", hash = "sha256:72bf66cd19e27ffd26516b9cbe676d50c2e0b026153289765dfe0cf406708128"},
-    {file = "time_machine-2.19.0-cp310-cp310-win_amd64.whl", hash = "sha256:46f1c945934ce3d6b4f388b8e581fce7f87ec891ea90d7128e19520e434f96f0"},
-    {file = "time_machine-2.19.0-cp310-cp310-win_arm64.whl", hash = "sha256:fb4897c7a5120a4fd03f0670f332d83b7e55645886cd8864a71944c4c2e5b35b"},
-    {file = "time_machine-2.19.0.tar.gz", hash = "sha256:7c5065a8b3f2bbb449422c66ef71d114d3f909c276a6469642ecfffb6a0fcd29"},
 ]
 
 [[package]]
