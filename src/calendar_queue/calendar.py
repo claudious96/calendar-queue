@@ -89,6 +89,7 @@ class Calendar(Generic[CalendarEvent]):
 
     def events(self) -> list[tuple[float, CalendarEvent]]:
         """Get all scheduled events as a list of tuples."""
+        # pylint: disable=protected-access
         return deepcopy(self._calendar_queue._queue)
 
     def __aiter__(self) -> Calendar[CalendarEvent]:
