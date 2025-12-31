@@ -54,7 +54,7 @@ async def test_events_generator():
         c.schedule(i, ts + timedelta(seconds=i * 1))
 
     count = 0
-    async for ts, event in c.events():
+    async for ts, event in c:
         # ensure events are yielded at the right time
         assert time() >= ts or time() == pytest.approx(ts)
         assert event == count
@@ -73,7 +73,7 @@ async def test_events_generator():
             count += 1
 
         if count == 5:
-            assert len(c.remaining_events()) == 0
+            assert len(c.events()) == 0
             c.stop()
 
 
@@ -89,7 +89,7 @@ async def test_cancel_events():
     for i in range(5):
         c.schedule(i, ts + timedelta(seconds=i * 1))
 
-    assert len(c.remaining_events()) == 5
+    assert len(c.events()) == 5
 
     pick_events = lambda x: x[1] % 2
 
@@ -97,15 +97,15 @@ async def test_cancel_events():
 
     assert len(cancelled_events) == 2 and all(pick_events(x) for x in cancelled_events)
 
-    remaining_events = c.remaining_events()
+    remaining_events = c.events()
 
     assert len(remaining_events) == 3 and all(
         not pick_events(x) for x in remaining_events
     )
 
-    async for ts, event in c.events():
+    async for ts, event in c:
         assert time() >= ts or time() == pytest.approx(ts)
         assert not event % 2
 
-        if len(c.remaining_events()) == 0:
+        if len(c.events()) == 0:
             c.stop()
