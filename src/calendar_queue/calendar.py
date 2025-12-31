@@ -13,7 +13,6 @@ from datetime import datetime
 from typing import Any, AsyncGenerator, Awaitable, Callable, Generic, Optional
 
 from calendar_queue.calendar_queue import CalendarEvent, CalendarQueue
-from calendar_queue.exceptions import CalendarMissingExecutor
 
 
 class Calendar(Generic[CalendarEvent]):
@@ -78,23 +77,6 @@ class Calendar(Generic[CalendarEvent]):
             (Optional[float]): Time left in seconds.
         """
         return self._calendar_queue.next_in()
-
-    def set_executor(
-        self,
-        executor: (
-            Callable[[float | int, CalendarEvent, Calendar], Awaitable[Any]]
-            | Callable[[float | int, CalendarEvent, Calendar], Any]
-        ),
-    ) -> None:
-        """This method can be used to set an executor function which will
-        used in the `run` method every time an event is scheduled to happen.
-
-        Args:
-            executor (CalendarExecutor): A sync or async function which takes as
-                argument the scheduled timestamp of the event and the event.
-        """
-
-        self.executor = executor
 
     def cancel_event(
         self, selector: Callable[[tuple[float, CalendarEvent]], bool]
@@ -168,32 +150,11 @@ class Calendar(Generic[CalendarEvent]):
                 if event is not None:
                     self._calendar_queue.put_nowait(event)
                 return
+            
+            if event is None:
+                raise RuntimeError("Unreachable state reached in Calendar.events")
 
             yield event
-
-    async def run(self) -> None:
-        """This method requires an executor to be set with `set_executor`.
-        It will internally await for events and call the executor every
-        time an event is scheduled to happen
-
-
-        Raises:
-            CalendarMissingExecutor: If the executor is not set.
-        """
-
-        if self.executor is None:
-            raise CalendarMissingExecutor(
-                "Executor function must be set to run the calendar"
-            )
-
-        self._stop_event.clear()
-
-        async for ts, event in self.events():
-
-            if asyncio.iscoroutinefunction(self.executor):
-                await self.executor(ts, event, self)
-            else:
-                self.executor(ts, event, self)
 
     def stop(self) -> None:
         """Stop the execution of the calendar"""
@@ -208,10 +169,3 @@ class Calendar(Generic[CalendarEvent]):
         """
 
         return self._calendar_queue.delete_items(selector=lambda _: True)
-
-
-# Define Executor type hint, for users only
-CalendarExecutor = (
-    Callable[[float | int, CalendarEvent, Calendar], Awaitable[Any]]
-    | Callable[[float | int, CalendarEvent, Calendar], Any]
-)
