@@ -14,8 +14,6 @@ nav:
 plugins:
   - search
   - mkdocstrings:
-      handlers:
-        python:
-          options:
-            members_order: source
-            returns_named_value: false
+      options:
+        members_order: source
+        returns_named_value: false
