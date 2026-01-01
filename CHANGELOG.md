@@ -7,7 +7,6 @@
 - **Breaking Change**: Removed the executor pattern from `Calendar` class. The `executor` attribute and the `run()` method are no longer available.
 - **Breaking Change**: `Calendar.events()` method returns the list of queued events. The async iterator is now implemented within the `Calendar` class (`__aiter__` and `__anext__`). The `Calendar` class can now be used directly in `async for` loops.
 - **Breaking Change**: The queue is no longer automatically cleared before starting to iterate over events. Previously, calling the async iterator would clear any pending events; now existing events are preserved.
-- Simplified the `Calendar` API by removing the experimental executor pattern in favor of always using async iteration
 
 ### Updated
 
