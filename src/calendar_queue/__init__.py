@@ -2,6 +2,5 @@
 
 from .calendar_queue import CalendarEvent, CalendarQueue
 from .calendar import Calendar
-from .exceptions import CalendarMissingExecutor
 
 __version__ = "0.1.0"

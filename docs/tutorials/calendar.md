@@ -29,10 +29,9 @@ calendar.schedule(item=event, when=ts)
 
 Scheduled events can be checked using the methods:
 
-1. `next_scheduled`: to get the next scheduled event, None if there are no scheduled events 
-1. `time_remaining`: to get the time (seconds) remaining to the next event, None if there are no scheduled events 
+1. `next_scheduled`: to get the next scheduled event, None if there are no scheduled events
+1. `time_remaining`: to get the time (seconds) remaining to the next event, None if there are no scheduled events
 1. `remaining_events`: to get all remaining scheduled events
-
 
 ### Cancelling an event
 
@@ -50,7 +49,7 @@ def event_selector(item: tuple[int, Any]):
 
     if ts <= deadline:
         return True
-    
+
     return False
 
 cancelled_events = calendar.cancel_event(event_selector)
@@ -74,38 +73,12 @@ calendar.clear()
 
 ## Running the calendar
 
-Now that we know how to schedule events, we need to consume the events as they happen. To do so we currently provide two approaches:
-
-1. an `events` method which returns a generator
-1. by setting an executor and then running the calendar
-
-### Using the generator
-
-The `events` method it's an asynchronous generator which yields a tuple of `timestamp` and `Event` as they are released from the internal calendar queue.
+Now that we know how to schedule events, we need to consume the events as they happen which can be done using the class as an asynchronous generator which yields a tuple of `timestamp` and `Event` as they are released from the internal calendar queue.
 
 ```python
 
-async for ts, event in calendar.events():
-    
+async for ts, event in calendar:
+
     # do stuff with the emitted events
-
-```
-
-## Using the executor
-
-Another approach is defining an executor function which will be executed every time an event is emitted by the internal calendar queue.
-The executor function can be a coroutine or a regular function, the calendar will execute it accordingly.
-
-```python
-
-def custom_executor(ts, event, calendar_instance):
-
-    # do stuff with emitted event
-    ...
-
-calendar.set_executor(custom_executor)
-
-# the calendar can be stopped by another task (or by the executor) by calling calendar.stop()
-await calendar.run()
 
 ```

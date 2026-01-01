@@ -10,24 +10,16 @@ from __future__ import annotations
 import asyncio
 from copy import deepcopy
 from datetime import datetime
-from typing import Any, AsyncGenerator, Awaitable, Callable, Generic, Optional
+from typing import Any, Awaitable, Callable, Generic, Optional
 
 from calendar_queue.calendar_queue import CalendarEvent, CalendarQueue
-from calendar_queue.exceptions import CalendarMissingExecutor
 
 
 class Calendar(Generic[CalendarEvent]):
     """An experimental Calendar class to facilitate the use of CalendarQueue
     for scheduling events.
 
-    It provides a an `events` method which returns an async generator that
-    can be used to await for events.
-
-    Additionally it provides a `run` method which can be used only after
-    setting an executor function, the executor can be an a sync or an async
-    function and will be called every time an event is scheduled to happen,
-    receiving the scheduled timestamp, the event and the Calendar object.
-
+    It can be used as async generator that can be used to await for events.
 
     Note:
         `CalendarEvent` is a type which represents the objects that
@@ -79,23 +71,6 @@ class Calendar(Generic[CalendarEvent]):
         """
         return self._calendar_queue.next_in()
 
-    def set_executor(
-        self,
-        executor: (
-            Callable[[float | int, CalendarEvent, Calendar], Awaitable[Any]]
-            | Callable[[float | int, CalendarEvent, Calendar], Any]
-        ),
-    ) -> None:
-        """This method can be used to set an executor function which will
-        used in the `run` method every time an event is scheduled to happen.
-
-        Args:
-            executor (CalendarExecutor): A sync or async function which takes as
-                argument the scheduled timestamp of the event and the event.
-        """
-
-        self.executor = executor
-
     def cancel_event(
         self, selector: Callable[[tuple[float, CalendarEvent]], bool]
     ) -> list[tuple[float, CalendarEvent]]:
@@ -112,88 +87,69 @@ class Calendar(Generic[CalendarEvent]):
 
         return self._calendar_queue.delete_items(selector)
 
-    def remaining_events(self) -> list[tuple[float, CalendarEvent]]:
-        """Return the remaining scheduled events
-
-        Returns:
-            (int): The number of scheduled events
-        """
-
+    def events(self) -> list[tuple[float, CalendarEvent]]:
+        """Get all scheduled events as a list of tuples."""
         # pylint: disable=protected-access
         return deepcopy(self._calendar_queue._queue)
 
-    async def events(self) -> AsyncGenerator[tuple[float, CalendarEvent], None]:
-        """This method returns an async generator which can be used for
-        awaiting events.
+    def __aiter__(self) -> Calendar[CalendarEvent]:
+        """Make the Calendar instance an async iterable.
 
-        Yields:
+        Returns:
+            Calendar: The Calendar instance itself
+        """
+        return self
+
+    async def __anext__(self) -> tuple[float, CalendarEvent]:
+        """Async iterator method to get the next scheduled event.
+
+        Returns:
             (Tuple(float, CalendarEvent)): A tuple of a timestamp (float)
                 and the scheduled event (CalendarEvent)
-        """
-        self._stop_event.clear()
-
-        while True:
-
-            done, pending = await asyncio.wait(
-                [
-                    asyncio.create_task(
-                        self._calendar_queue.get(), name="__calendar_event"
-                    ),
-                    asyncio.create_task(
-                        self._stop_event.wait(), name="__calendar_stop"
-                    ),
-                ],
-                return_when=asyncio.FIRST_COMPLETED,
-            )
-
-            event: Optional[tuple[float, CalendarEvent]] = None
-            stop = False
-
-            for d in done:
-                if e := d.exception():
-                    raise e
-
-                if "__calendar_event" == d.get_name():
-                    event = d.result()  # type: ignore
-                else:
-                    stop = True
-
-            for p in pending:
-                p.cancel()
-
-            # If the stop event was set AND we got a new event,
-            # we honour the stop and put back the gotten event
-            # into the queue
-            if stop:
-                if event is not None:
-                    self._calendar_queue.put_nowait(event)
-                return
-
-            yield event
-
-    async def run(self) -> None:
-        """This method requires an executor to be set with `set_executor`.
-        It will internally await for events and call the executor every
-        time an event is scheduled to happen
-
 
         Raises:
-            CalendarMissingExecutor: If the executor is not set.
+            StopAsyncIteration: When iteration is stopped via the stop() method
         """
 
-        if self.executor is None:
-            raise CalendarMissingExecutor(
-                "Executor function must be set to run the calendar"
-            )
+        done, pending = await asyncio.wait(
+            [
+                asyncio.create_task(
+                    self._calendar_queue.get(), name="__calendar_event"
+                ),
+                asyncio.create_task(
+                    self._stop_event.wait(), name="__calendar_stop"
+                ),
+            ],
+            return_when=asyncio.FIRST_COMPLETED,
+        )
 
-        self._stop_event.clear()
+        event: Optional[tuple[float, CalendarEvent]] = None
+        stop = False
 
-        async for ts, event in self.events():
+        for d in done:
+            if e := d.exception():
+                raise e
 
-            if asyncio.iscoroutinefunction(self.executor):
-                await self.executor(ts, event, self)
+            if "__calendar_event" == d.get_name():
+                event = d.result()  # type: ignore
             else:
-                self.executor(ts, event, self)
+                stop = True
+
+        for p in pending:
+            p.cancel()
+
+        # If the stop event was set AND we got a new event,
+        # we honour the stop and put back the gotten event
+        # into the queue
+        if stop:
+            if event is not None:
+                self._calendar_queue.put_nowait(event)
+            raise StopAsyncIteration
+
+        if event is None:
+            raise RuntimeError("Unreachable state reached in Calendar.__anext__")
+
+        return event
 
     def stop(self) -> None:
         """Stop the execution of the calendar"""
@@ -208,10 +164,3 @@ class Calendar(Generic[CalendarEvent]):
         """
 
         return self._calendar_queue.delete_items(selector=lambda _: True)
-
-
-# Define Executor type hint, for users only
-CalendarExecutor = (
-    Callable[[float | int, CalendarEvent, Calendar], Awaitable[Any]]
-    | Callable[[float | int, CalendarEvent, Calendar], Any]
-)
