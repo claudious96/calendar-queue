@@ -25,60 +25,61 @@ pip install calendar-queue
 
 ## Usage
 
-An example usage of `CalendarQueue`
+### CalendarQueue
+
+`CalendarQueue` is a low-level, efficient queue for scheduling events at specific times:
 
 ```python
 import asyncio
-from datetime import datetime
-from random import randrange
-from secrets import token_hex
-
+from datetime import datetime, timedelta
 from calendar_queue import CalendarQueue
 
-# (optional) define the item type
-CustomItem = tuple[str]
+cq = CalendarQueue()
 
-# use the low level calendar queue
-cq: CalendarQueue[CustomItem] = CalendarQueue()
+async def schedule_events():
+    for i in range(3):
+        scheduled_time = (datetime.now() + timedelta(seconds=i+1)).timestamp()
+        cq.put_nowait((scheduled_time, f"Event {i+1}"))
 
-async def put_random():
-
-    print("Putting new items in the calendar queue. Hit CTRL + C to stop.")
-
-    while True:
-
-        # sleep for a while, just to release the task
-        await asyncio.sleep(1)
-
-        scheduled_ts = datetime.now().timestamp() + randrange(1, 5)
-
-        s = token_hex(8)
-
-        current_item: CustomItem = (s)
-
-        print(f"{datetime.now().isoformat()}: putting {current_item} scheduled for {datetime.fromtimestamp(scheduled_ts).isoformat()}")
-
-        cq.put_nowait((scheduled_ts, current_item))
-
-
-async def get_from_queue():
-
-    while True:
-        ts, el = await cq.get()
-
-        print(f"{datetime.now().isoformat()}: getting {el} scheduled for {datetime.fromtimestamp(ts).isoformat()}")
+async def process_events():
+    for _ in range(3):
+        ts, event = await cq.get()
+        print(f"{datetime.fromtimestamp(ts).isoformat()}: {event}")
 
 async def main():
-
-    await asyncio.gather(
-        asyncio.create_task(put_random()),
-        asyncio.create_task(get_from_queue()),
-    )
-
+    await asyncio.gather(schedule_events(), process_events())
 
 if __name__ == "__main__":
     asyncio.run(main())
+```
 
+### Calendar
+
+`Calendar` is a higher-level abstraction that simplifies working with `datetime` objects and provides an async iterator:
+
+```python
+import asyncio
+from datetime import datetime, timedelta
+from calendar_queue import Calendar
+
+calendar = Calendar()
+
+async def schedule_events():
+    for i in range(3):
+        scheduled_time = datetime.now() + timedelta(seconds=i+1)
+        calendar.schedule(f"Event {i+1}", when=scheduled_time)
+
+async def process_events():
+    async for ts, event in calendar:
+        print(f"{datetime.fromtimestamp(ts).isoformat()}: {event}")
+        if int(ts) == int((datetime.now() + timedelta(seconds=3)).timestamp()):
+            calendar.stop()
+
+async def main():
+    await asyncio.gather(schedule_events(), process_events())
+
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
 
 ## Development
