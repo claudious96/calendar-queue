@@ -25,37 +25,9 @@ pip install calendar-queue
 
 ## Usage
 
-### CalendarQueue
+## Quickstart
 
-`CalendarQueue` is a low-level, efficient queue for scheduling events at specific times:
-
-```python
-import asyncio
-from datetime import datetime, timedelta
-from calendar_queue import CalendarQueue
-
-cq = CalendarQueue()
-
-async def schedule_events():
-    for i in range(3):
-        scheduled_time = (datetime.now() + timedelta(seconds=i+1)).timestamp()
-        cq.put_nowait((scheduled_time, f"Event {i+1}"))
-
-async def process_events():
-    for _ in range(3):
-        ts, event = await cq.get()
-        print(f"{datetime.fromtimestamp(ts).isoformat()}: {event}")
-
-async def main():
-    await asyncio.gather(schedule_events(), process_events())
-
-if __name__ == "__main__":
-    asyncio.run(main())
-```
-
-### Calendar
-
-`Calendar` is a higher-level abstraction that simplifies working with `datetime` objects and provides an async iterator:
+A minimal, practical example showing how `Calendar` can schedule and emit events: schedule three reminders a few seconds apart and consume them as they fire.
 
 ```python
 import asyncio
@@ -64,23 +36,31 @@ from calendar_queue import Calendar
 
 calendar = Calendar()
 
-async def schedule_events():
-    for i in range(3):
-        scheduled_time = datetime.now() + timedelta(seconds=i+1)
-        calendar.schedule(f"Event {i+1}", when=scheduled_time)
+async def producer():
+    for i in range(1, 4):
+        when = datetime.now() + timedelta(seconds=i * 2)
+        calendar.schedule(f"Reminder {i}", when=when)
+        print(f"scheduled Reminder {i} for {when.isoformat()}")
+        await asyncio.sleep(0.1)
 
-async def process_events():
+async def consumer():
     async for ts, event in calendar:
         print(f"{datetime.fromtimestamp(ts).isoformat()}: {event}")
-        if int(ts) == int((datetime.now() + timedelta(seconds=3)).timestamp()):
+        # stop after the last event
+        if event == "Reminder 3":
             calendar.stop()
 
 async def main():
-    await asyncio.gather(schedule_events(), process_events())
+    await asyncio.gather(producer(), consumer())
 
 if __name__ == "__main__":
     asyncio.run(main())
 ```
+
+For more examples and the API reference, see the documentation in the `docs` folder:
+
+- Tutorials: [docs/tutorials](docs/tutorials/)
+- API reference: [docs/api-reference](docs/api-reference/)
 
 ## Development
 
