@@ -112,6 +112,41 @@ async def test_delete_items():
 
 
 @pytest.mark.asyncio
+async def test_delete_restores_heap_property():
+    """Ensure deleting arbitrary items restores the heap property so
+    subsequent pops return items in increasing timestamp order.
+    """
+
+    cq = CalendarQueue()
+
+    base_ts = time()
+
+    items = [
+        (base_ts + 10, "a"),
+        (base_ts + 20, "b"),
+        (base_ts + 30, "c"),
+        (base_ts + 40, "d"),
+    ]
+
+    for item in items:
+        cq.put_nowait(item)
+
+    # remove the middle element
+    deleted = cq.delete_items(lambda x: x[1] == "b")
+
+    assert len(deleted) == 1 and deleted[0] == (base_ts + 20, "b")
+
+    popped = []
+    while cq.qsize() > 0:
+        popped.append(cq.get_nowait())
+
+    assert [p[1] for p in popped] == ["a", "c", "d"]
+    assert popped[0][0] == pytest.approx(base_ts + 10, abs=ABS_TOLERANCE)
+    assert popped[1][0] == pytest.approx(base_ts + 30, abs=ABS_TOLERANCE)
+    assert popped[2][0] == pytest.approx(base_ts + 40, abs=ABS_TOLERANCE)
+
+
+@pytest.mark.asyncio
 async def test_far_schedule():
     """Test putting an event scheduled far in time.
     We use LoopTimeTravel to simulate the time traveling
