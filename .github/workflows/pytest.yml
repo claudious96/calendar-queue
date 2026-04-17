@@ -5,15 +5,13 @@ permissions:
 on:
   push:
     branches:
-    - "main"
+      - "main"
   pull_request:
     branches:
-    - "main"
+      - "main"
 
 jobs:
-
   test:
-
     strategy:
       fail-fast: false
       matrix:
@@ -23,31 +21,30 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
+      - uses: actions/checkout@v6
 
-    - uses: actions/checkout@v4
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
 
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ matrix.python-version }}
+      - name: Setup PDM
+        uses: pdm-project/setup-pdm@v4.4
+        with:
+          python-version: ${{ matrix.python-version }}
+          # The target architecture (x86, x64) of the Python interpreter.
+          # architecture: # optional
+          version: 2.26.7
+          cache: true
+          cache-dependency-path: ./py${{ matrix.python-version }}.lock
 
-    - name: Setup PDM
-      uses: pdm-project/setup-pdm@v4.4
-      with:
-        python-version: ${{ matrix.python-version }}
-        # The target architecture (x86, x64) of the Python interpreter.
-        # architecture: # optional
-        version: 2.26.3
-        cache: true
-        cache-dependency-path: ./py${{ matrix.python-version }}.lock
+      - name: Install dependencies
+        run: pdm install --frozen-lockfile -L ./py${{ matrix.python-version }}.lock
 
-    - name: Install dependencies
-      run: pdm install --frozen-lockfile -L ./py${{ matrix.python-version }}.lock
+      - name: Test with pytest
+        run: pdm run pytest --timeout=90
 
-    - name: Test with pytest
-      run: pdm run pytest --timeout=90
-
-    - name: Upload code coverage to Codecov
-      uses: codecov/codecov-action@v4
-      with:
-        token: ${{ secrets.CODECOV_TOKEN }}
+      - name: Upload code coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}

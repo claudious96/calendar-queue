@@ -7,11 +7,8 @@ on:
     tags:
       - "v*"
 
-
 jobs:
-
   publish-to-pypi:
-
     name: Publish distribution to PyPI
     runs-on: ubuntu-latest
     permissions:
@@ -20,15 +17,14 @@ jobs:
       # IMPORTANT: this permission is mandatory for trusted publishing
       id-token: write
     steps:
-
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Setup PDM
         uses: pdm-project/setup-pdm@v4.4
         with:
           # The target architecture (x86, x64) of the Python interpreter.
           # architecture: # optional
-          version: 2.26.3
+          version: 2.26.7
           cache: true
 
       - name: Publish package distributions to PyPI
