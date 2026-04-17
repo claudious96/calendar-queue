@@ -8,6 +8,7 @@ delete existing elements.
 from asyncio import Queue, QueueFull, TimerHandle
 from heapq import heappop as heap_pop
 from heapq import heappush as heap_push
+from heapq import heapify
 import math
 import sys
 from time import time
@@ -236,6 +237,10 @@ class CalendarQueue(Queue, Generic[CalendarEvent]):
         for i, item in enumerate(reversed(self._queue)):
             if selector(item):
                 del_items.append(self._queue.pop(q_len - 1 - i))
+
+        # Restore heap invariant after arbitrary deletions.
+        if del_items:
+            heapify(self._queue)
 
         self._update_timer()
 
