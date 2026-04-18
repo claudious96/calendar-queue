@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.2.1] - 2026-04-18
+
+### Fixed
+
+- Restore heap invariant in `CalendarQueue.delete_items()` by calling `heapq.heapify(self._queue)` after removing items; prevents incorrect ordering after arbitrary deletions.
+
+### Added
+
+- Regression test `test_delete_restores_heap_property` in `tests/test_calendar_queue.py` covering deletion + heap restore behavior.
+
 ## [0.2.0] - 2026-01-01
 
 ### Changed
