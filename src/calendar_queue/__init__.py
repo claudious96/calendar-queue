@@ -3,4 +3,4 @@
 from .calendar_queue import CalendarEvent, CalendarQueue
 from .calendar import Calendar
 
-__version__ = "0.2.1"
+__version__ = "0.2.2"
