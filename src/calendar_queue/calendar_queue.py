@@ -226,7 +226,7 @@ class CalendarQueue(Queue, Generic[CalendarEvent]):
         Args:
             selector (Callable[[tuple[float, CalendarEvent]], bool]): Selector
                 function that takes a tuple as arg in the form of
-                (scheduled_ts, key, item). The function should return True if
+                (scheduled_ts, item). The function should return True if
                 the item is supposed to be deleted from the queue, False otherwise.
 
         Returns:

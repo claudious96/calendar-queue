@@ -78,7 +78,7 @@ class Calendar(Generic[CalendarEvent]):
                 returns True, the event will be cancelled.
 
         Returns:
-            (int): number of cancelled events
+            (list[tuple[float, CalendarEvent]]): List of cancelled events.
         """
 
         return self._calendar_queue.delete_items(selector)
@@ -156,7 +156,7 @@ class Calendar(Generic[CalendarEvent]):
         """Cancel all scheduled events.
 
         Returns:
-            (list[Tuple[float, CalendarEvent]]): The number of cancelled events.
+            (list[tuple[float, CalendarEvent]]): List of cancelled events.
         """
 
         return self._calendar_queue.delete_items(selector=lambda _: True)
