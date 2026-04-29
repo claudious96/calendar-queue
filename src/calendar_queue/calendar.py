@@ -148,9 +148,25 @@ class Calendar(Generic[CalendarEvent]):
         return event
 
     def stop(self) -> None:
-        """Stop the execution of the calendar"""
+        """Stop the execution of the calendar.
+
+        Once called, any active ``async for`` loop over this instance will
+        raise ``StopAsyncIteration`` at the next iteration.  The effect is
+        permanent: further iteration will also stop immediately until
+        ``reset()`` is called.
+        """
 
         self._stop_event.set()
+
+    def reset(self) -> None:
+        """Re-enable iteration after ``stop()`` has been called.
+
+        Clears the internal stop flag so that the calendar can be iterated
+        again with ``async for``.  Scheduled events that were preserved when
+        ``stop()`` was called (see ``__anext__``) will be emitted normally.
+        """
+
+        self._stop_event.clear()
 
     def clear(self) -> list[tuple[float, CalendarEvent]]:
         """Cancel all scheduled events.
