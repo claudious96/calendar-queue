@@ -56,7 +56,7 @@ class CalendarQueue(Queue, Generic[CalendarEvent]):
             return
 
         prev_timer_ts = self._getter_timer.when()
-        if self.qsize() > 1 and prev_timer_ts > loop.time():
+        if prev_timer_ts > loop.time():
             should_update = not math.isclose(
                 prev_timer_ts, loop.time() + ts - time(), abs_tol=0.00001
             )
