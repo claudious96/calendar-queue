@@ -78,6 +78,40 @@ async def test_events_generator():
 
 
 @pytest.mark.asyncio
+async def test_reset():
+    """Test that reset() re-enables iteration after stop() has been called."""
+
+    c: Calendar[int] = Calendar()
+
+    ts = datetime.now()
+
+    for i in range(4):
+        c.schedule(i, ts + timedelta(seconds=i * 1))
+
+    # Consume the first two events then stop.
+    collected = []
+    async for _, event in c:
+        collected.append(event)
+        if event == 1:
+            c.stop()
+
+    assert collected == [0, 1]
+
+    # Without reset, iteration stops immediately.
+    async for _, event in c:
+        pytest.fail(f"Should not have received event {event} after stop()")
+
+    # After reset, the remaining events are emitted normally.
+    c.reset()
+    async for _, event in c:
+        collected.append(event)
+        if len(c.events()) == 0:
+            c.stop()
+
+    assert collected == [0, 1, 2, 3]
+
+
+@pytest.mark.asyncio
 async def test_cancel_events():
     """Test that cancelling events remove them from the calendar
     and that the next in line is correctly scheduled"""
