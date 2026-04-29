@@ -10,7 +10,7 @@ from __future__ import annotations
 import asyncio
 from copy import deepcopy
 from datetime import datetime
-from typing import Any, Awaitable, Callable, Generic, Optional
+from typing import Callable, Generic, Optional
 
 from calendar_queue.calendar_queue import CalendarEvent, CalendarQueue
 
@@ -29,10 +29,6 @@ class Calendar(Generic[CalendarEvent]):
 
     def __init__(self) -> None:
         self._calendar_queue: CalendarQueue[CalendarEvent] = CalendarQueue()
-        self.executor: Optional[
-            Callable[[float | int, CalendarEvent, Calendar], Awaitable[Any]]
-            | Callable[[float | int, CalendarEvent, Calendar], Any]
-        ] = None
         self._stop_event = asyncio.Event()
 
     def schedule(self, item: CalendarEvent, when: datetime | float) -> None:
