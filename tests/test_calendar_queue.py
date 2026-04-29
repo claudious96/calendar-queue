@@ -2,8 +2,6 @@ import asyncio
 import sys
 from datetime import timedelta
 from time import time
-from unittest.mock import patch
-
 import pytest
 
 from calendar_queue import CalendarQueue
@@ -149,14 +147,11 @@ async def test_delete_restores_heap_property():
 @pytest.mark.asyncio
 async def test_far_schedule():
     """Test putting an event scheduled far in time.
-    We use LoopTimeTravel to simulate the time traveling
-    and verify that the elements are returned at the correct
-    timestamp.
+    Verifies that the item blocks while not yet due, and is returned
+    once its time arrives.
     """
 
     cq = CalendarQueue()
-
-    cq_loop = cq._get_loop() # type: ignore
 
     delta = timedelta(days=30)
 
@@ -166,9 +161,18 @@ async def test_far_schedule():
         await asyncio.wait_for(cq.get(), 2)
         pytest.fail("Item was returned immediately. It makes no sense.")
 
-    with patch.object(cq_loop, "time", return_value=cq_loop.time() + delta.total_seconds() + 10):
-        item = await asyncio.wait_for(cq.get(), 5)
-        assert item[-1] == "foo"
+    # The item is still in the queue (the timed-out get() was cancelled
+    # before consuming it).  Replace the far-future timer with one that
+    # fires immediately to simulate the scheduled time arriving, without
+    # globally patching loop.time() which breaks asyncio's own internals.
+    assert cq._getter_timer is not None  # type: ignore
+    cq._getter_timer.cancel()  # type: ignore
+    cq._getter_timer = cq._get_loop().call_later(  # type: ignore
+        0, cq._calendar_alarm
+    )
+
+    item = await asyncio.wait_for(cq.get(), 5)
+    assert item[-1] == "foo"
 
 
 @pytest.mark.asyncio
