@@ -10,7 +10,7 @@ from __future__ import annotations
 import asyncio
 from copy import deepcopy
 from datetime import datetime
-from typing import Any, Awaitable, Callable, Generic, Optional
+from typing import Callable, Generic, Optional
 
 from calendar_queue.calendar_queue import CalendarEvent, CalendarQueue
 
@@ -29,10 +29,6 @@ class Calendar(Generic[CalendarEvent]):
 
     def __init__(self) -> None:
         self._calendar_queue: CalendarQueue[CalendarEvent] = CalendarQueue()
-        self.executor: Optional[
-            Callable[[float | int, CalendarEvent, Calendar], Awaitable[Any]]
-            | Callable[[float | int, CalendarEvent, Calendar], Any]
-        ] = None
         self._stop_event = asyncio.Event()
 
     def schedule(self, item: CalendarEvent, when: datetime | float) -> None:
@@ -82,7 +78,7 @@ class Calendar(Generic[CalendarEvent]):
                 returns True, the event will be cancelled.
 
         Returns:
-            (int): number of cancelled events
+            (list[tuple[float, CalendarEvent]]): List of cancelled events.
         """
 
         return self._calendar_queue.delete_items(selector)
@@ -160,7 +156,7 @@ class Calendar(Generic[CalendarEvent]):
         """Cancel all scheduled events.
 
         Returns:
-            (list[Tuple[float, CalendarEvent]]): The number of cancelled events.
+            (list[tuple[float, CalendarEvent]]): List of cancelled events.
         """
 
         return self._calendar_queue.delete_items(selector=lambda _: True)
