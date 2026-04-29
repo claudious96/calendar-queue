@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.2.2] - 2026-04-29
+
+### Fixed
+
+- `CalendarQueue.delete_items()` did not decrement `_unfinished_tasks` for removed items, causing `queue.join()` to block indefinitely after any deletion.
+- `CalendarQueue._update_timer()` unconditionally cancelled and recreated the timer when the queue had exactly one item, even when the timer was already set for the correct time.
+- `Calendar.stop()` permanently prevented further iteration with no way to recover; behavior is now documented and `reset()` is provided as the recovery path.
+- Removed leftover `executor` attribute from `Calendar` (orphaned from the 0.2.0 executor-pattern removal).
+- Corrected docstring for `CalendarQueue.delete_items()`: selector tuple shape was documented as `(scheduled_ts, key, item)` but is `(scheduled_ts, item)`.
+- Corrected docstring for `Calendar.cancel_event()`: return type was documented as `int` but is `list[tuple[float, CalendarEvent]]`.
+- Corrected docstring for `Calendar.clear()`: description incorrectly said "The number of cancelled events" instead of "List of cancelled events".
+
+### Added
+
+- `Calendar.reset()` — clears the internal stop flag set by `stop()`, re-enabling `async for` iteration over remaining scheduled events.
+- `CalendarQueue.get_nowait()` override with explicit documentation that it bypasses scheduled timestamps and returns the earliest-due item immediately, regardless of when it is due.
+
 ## [0.2.1] - 2026-04-18
 
 ### Fixed
