@@ -258,6 +258,12 @@ class CalendarQueue(Queue, Generic[CalendarEvent]):
         # Restore heap invariant after arbitrary deletions.
         if del_items:
             heapify(self._queue)
+            # Mirror the _unfinished_tasks increments done by put_nowait so
+            # that join() does not block indefinitely for deleted items.
+            n = min(len(del_items), self._unfinished_tasks)
+            self._unfinished_tasks -= n
+            if self._unfinished_tasks == 0:
+                self._finished.set()
 
         self._update_timer()
 
