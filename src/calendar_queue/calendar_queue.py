@@ -186,6 +186,23 @@ class CalendarQueue(Queue, Generic[CalendarEvent]):
         self._unfinished_tasks += 1
         self._finished.clear()
 
+    # pylint: disable=useless-parent-delegation
+    def get_nowait(self) -> tuple[float, CalendarEvent]:
+        """Remove and return the next item from the queue without blocking.
+
+        Unlike :meth:`get`, this method does **not** check whether the item's
+        scheduled timestamp has been reached.  It returns the
+        earliest-scheduled item immediately, regardless of when it is due.
+        Use :meth:`get` to honour the scheduled time.
+
+        Raises:
+            QueueEmpty: if the queue is empty.
+
+        Returns:
+            (tuple[float, CalendarEvent]): Tuple of scheduled timestamp and event.
+        """
+        return super().get_nowait()  # type: ignore[return-value]
+
     def next_in(self) -> Optional[float]:
         """Get the seconds left until the next scheduled event. If the
         event is overdue it returns 0. None is returned in case there are no
